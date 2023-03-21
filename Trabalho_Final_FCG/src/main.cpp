@@ -573,7 +573,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, BUNNY);
         DrawVirtualObject("the_bunny");
 
-        model = Matrix_Translate(0.0f,-1.0f,0.0f)*Matrix_Scale(99.0f, 99.0f, 99.0f);
+        model = Matrix_Translate(0.0f,-1.0f,0.0f)*Matrix_Scale(9.0f, 9.0f, 9.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
