@@ -60,5 +60,7 @@ void main()
     // Veja slides 123-151 do documento Aula_07_Transformacoes_Geometricas_3D.pdf.
     normal = inverse(transpose(model)) * normal_coefficients;
     normal.w = 0.0;
+
+    texcoords = texture_coefficients;
 }
 
