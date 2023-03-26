@@ -31,6 +31,12 @@ uniform mat4 projection;
 #define AMONG  9
 #define SKYBOX 10
 #define SUN    11
+#define AMONG_BLUE 12
+#define AMONG_GREEN 13
+#define AMONG_ORANGE 14
+#define AMONG_PINK 15
+#define AMONG_WHITE 16
+#define AMONG_YELLOW 17
 
 uniform int object_id;
 
@@ -46,6 +52,12 @@ uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
+uniform sampler2D TextureImage7;
+uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
+uniform sampler2D TextureImage11;
+uniform sampler2D TextureImage12;
 
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
@@ -94,7 +106,7 @@ void main()
     float q; // Expoente especular para o modelo de iluminação de Phong
 
 
-    if(object_id == SPHERE)
+    if(object_id == SPHERE || object_id == SKYBOX || object_id == SUN)
     {
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
@@ -129,44 +141,13 @@ void main()
         //V = (position_model.y - bbox_min.y) / bbox_max.y - bbox_min.y;
 
     }
-    else if ( object_id == FACE )
+    else if (object_id == AMONG || object_id == AMONG_BLUE || object_id == AMONG_GREEN || object_id == AMONG_ORANGE || object_id == AMONG_PINK || object_id == AMONG_WHITE || object_id == AMONG_YELLOW)
     {
-        // Propriedades espectrais da face
-        Kd = vec3(0.08,0.4,0.8);
-        Ks = vec3(0.8,0.8,0.8);
-        Ka = vec3(0.04,0.2,0.4);
-        q = 32.0;
-    }
-    else if ( object_id == GUN )
-    {
-        // Propriedades espectrais da espada
+        // Propriedades espectrais dos AmongUs
         U = texcoords.x;
         V = texcoords.y;
     }
-    else if (object_id == AMONG)
-    {
-        // Propriedades espectrais da espada
-        U = texcoords.x;
-        V = texcoords.y;
-    }
-    else if (object_id == SKYBOX)
-    {
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
-        vec4 p_prime = bbox_center + (position_model - bbox_center / length(position_model - bbox_center));
-
-        U = (atan(-p_prime.z, p_prime.x) + M_PI) / (2*M_PI);
-        V = (asin(p_prime.y) + M_PI_2) / M_PI;
-    }
-    else if (object_id == SUN)
-    {
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-
-        vec4 p_prime = bbox_center + (position_model - bbox_center / length(position_model - bbox_center));
-
-        U = (atan(-p_prime.z, p_prime.x) + M_PI) / (2*M_PI);
-        V = (asin(p_prime.y) + M_PI_2) / M_PI;
-    }
     else if ( object_id == CUBE )
     {
         // Propriedades espectrais da espada
@@ -322,6 +303,39 @@ void main()
         color.a = 1;
 
         // Cor final com correção gamma, considerando monitor sRGB.
+        color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
+    }
+    else //if(object_id == AMONG_BLUE)
+    {
+//        U = texcoords.x;
+//        V = texcoords.y;
+////
+        vec3 Kd0 = texture(TextureImage7, vec2(U,V)).rgb;
+////
+////        if(object_id == AMONG_GREEN)
+////            vec3 Kd0 = texture(TextureImage8, vec2(U,V)).rgb;
+////
+////        if(object_id == AMONG_ORANGE)
+////            vec3 Kd0 = texture(TextureImage9, vec2(U,V)).rgb;
+////
+////        if(object_id == AMONG_PINK)
+////            vec3 Kd0 = texture(TextureImage10, vec2(U,V)).rgb;
+////
+////        if(object_id == AMONG_WHITE)
+////            vec3 Kd0 = texture(TextureImage11, vec2(U,V)).rgb;
+////
+////        if(object_id == AMONG_YELLOW)
+////            vec3 Kd0 = texture(TextureImage12, vec2(U,V)).rgb;
+////
+//        // Equação de Iluminação
+//        float lambert = max(0,dot(n,l));
+
+        color.rgb = Kd0;// * (lambert + 0.03);
+//
+//        // Alpha default = 1 = 100% opaco = 0% transparente
+        color.a = 1;
+//
+//        // Cor final com correção gamma, considerando monitor sRGB.
         color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
     }
 }

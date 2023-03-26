@@ -137,8 +137,10 @@ void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-
 void TextRendering_Aim(GLFWwindow* window);
+
+// Função que calcula a Curva de Bézier de grau 3
+glm::vec4 bezier_curve(float t, glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, glm::vec4 p4);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -335,6 +337,12 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/amonguslow/texture100.png");
     LoadTextureImage("../../data/skybox.jpg");
     LoadTextureImage("../../data/sun.jpg");
+    LoadTextureImage("../../data/amonguslow/textureBlue.png");
+    LoadTextureImage("../../data/amonguslow/textureGreen.png");
+    LoadTextureImage("../../data/amonguslow/textureOrange.png");
+    LoadTextureImage("../../data/amonguslow/texturePink.png");
+    LoadTextureImage("../../data/amonguslow/textureWhite.png");
+    LoadTextureImage("../../data/amonguslow/textureYellow.png");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -384,6 +392,7 @@ int main(int argc, char* argv[])
 
     float speed = 3.0f; // Velocidade da câmera
     float prev_time = (float)glfwGetTime();
+
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -534,7 +543,6 @@ int main(int argc, char* argv[])
         }
 
 
-
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
@@ -552,6 +560,32 @@ int main(int argc, char* argv[])
         #define AMONG  9
         #define SKYBOX 10
         #define SUN    11
+        #define AMONG_BLUE 12
+        #define AMONG_GREEN 13
+        #define AMONG_ORANGE 14
+        #define AMONG_PINK 15
+        #define AMONG_WHITE 16
+        #define AMONG_YELLOW 17
+
+        // Boneco com movimento sobre a Curva de Bézier de grau 3
+        glm::vec4 control_point1 = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 control_point2 = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+        glm::vec4 control_point3 = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+        glm::vec4 control_point4 = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 posicao1 = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), control_point1, control_point2, control_point3, control_point4);
+        model = Matrix_Identity(); // Transformação inicial = identidade.
+        model = model * Matrix_Translate(posicao1.x, posicao1.y, posicao1.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+        glUniform1i(g_object_id_uniform, AMONG_BLUE);
+        DrawVirtualObject("Body");
+        DrawVirtualObject("BackPack");
+        DrawVirtualObject("Glass");
+        DrawVirtualObject("Glass2");
+        DrawVirtualObject("Right");
+        DrawVirtualObject("Left");
+        DrawVirtualObject("Box");
 
 
         model = Matrix_Identity(); // Transformação inicial = identidade.
@@ -607,13 +641,13 @@ int main(int argc, char* argv[])
         PopMatrix(model);
 
         // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(g_AngleZ)
-              * Matrix_Rotate_Y(g_AngleY)
-              * Matrix_Rotate_X(g_AngleX);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
+//        model = Matrix_Translate(1.0f,0.0f,0.0f)
+//              * Matrix_Rotate_Z(g_AngleZ)
+//              * Matrix_Rotate_Y(g_AngleY)
+//              * Matrix_Rotate_X(g_AngleX);
+//        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+//        glUniform1i(g_object_id_uniform, BUNNY);
+//        DrawVirtualObject("the_bunny");
 
         for(float i = -50;i <50; i++)
             for(float j = -50;j <50; j++)
@@ -626,10 +660,10 @@ int main(int argc, char* argv[])
 
 
         // Desenhamos o modelo da arma
-        model = Matrix_Identity() * Matrix_Translate(2.0f,1.0f,0.0f)*Matrix_Scale(2.0f, 2.0f, 2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, GUN);
-        DrawVirtualObject("Cube.007_Cube.012");
+//        model = Matrix_Identity() * Matrix_Translate(2.0f,1.0f,0.0f)*Matrix_Scale(2.0f, 2.0f, 2.0f);
+//        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+//        glUniform1i(g_object_id_uniform, GUN);
+//        DrawVirtualObject("Cube.007_Cube.012");
 
 //
 //        // Desenhamos o modelo do personagem
@@ -891,8 +925,8 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT /*GL_CLAMP_TO_EDGE*/);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT /*GL_CLAMP_TO_EDGE*/);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, /*GL_REPEAT*/ GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, /*GL_REPEAT*/ GL_CLAMP_TO_EDGE);
 
     // Parâmetros de amostragem da textura.
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -992,6 +1026,12 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage9"), 9);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
     glUseProgram(0);
 }
 
@@ -1963,6 +2003,19 @@ void PrintObjModelInfo(ObjModel* model)
     }
     printf("\n");
   }
+}
+
+glm::vec4 bezier_curve(float t, glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, glm::vec4 p4)
+{
+    glm::vec4 interpolacao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    interpolacao.x = pow((1 - t), 3)*p1.x + 3*t*pow((1 - t), 2)*p2.x + 3*pow(t, 2)*(1 - t)*p3.x + pow(t, 3)*p4.x;
+    interpolacao.y = pow((1 - t), 3)*p1.y + 3*t*pow((1 - t), 2)*p2.y + 3*pow(t, 2)*(1 - t)*p3.y + pow(t, 3)*p4.y;
+    interpolacao.z = pow((1 - t), 3)*p1.z + 3*t*pow((1 - t), 2)*p2.z + 3*pow(t, 2)*(1 - t)*p3.z + pow(t, 3)*p4.z;
+
+    //printf("X = %f\nY = %f\nZ = %f\nW = %f\n", interpolacao.x, interpolacao.y, interpolacao.z, interpolacao.w);
+
+    return interpolacao;
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
