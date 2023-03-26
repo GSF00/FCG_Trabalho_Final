@@ -5,8 +5,12 @@
 //    INF01047 Fundamentos de Computação Gráfica
 //               Prof. Eduardo Gastal
 //
-//                   LABORATÓRIO 4
+//                   TRABALHO FINAL
 //
+//        Nome:    Guilherme Schaab Fisch
+//        Cartão:       00288913
+
+
 
 // Arquivos "headers" padrões de C podem ser incluídos em um
 // programa C++, sendo necessário somente adicionar o caractere
@@ -49,6 +53,23 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
+
+#define SPHERE          0
+#define BUNNY           1
+#define PLANE           2
+#define FACE            4
+#define CUBE            5
+#define GUN             8
+#define AMONG           9
+#define SKYBOX          10
+#define SUN             11
+#define AMONG_BLUE      12
+#define AMONG_GREEN     13
+#define AMONG_ORANGE    14
+#define AMONG_PINK      15
+#define AMONG_WHITE     16
+#define AMONG_YELLOW    17
+#define AXE             18
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -198,6 +219,7 @@ bool tecla_W_pressionada = false;
 bool tecla_A_pressionada = false;
 bool tecla_S_pressionada = false;
 bool tecla_D_pressionada = false;
+bool tecla_E_pressionada = false;
 
 
 // Ângulos que controlam o vetor View da câmera livre
@@ -220,6 +242,8 @@ float g_ForearmAngleX = 0.0f;
 float g_TorsoPositionX = 0.0f;
 float g_TorsoPositionY = -0.5f;
 float g_TorsoPositionZ = 0.0f;
+
+glm::vec4 player_position = glm::vec4(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, 1.0f);
 
 // Direção da movimentação do personagem
 glm::vec4 direcao = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
@@ -247,11 +271,25 @@ glm::vec4 camera_position_c = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Ponto "c", c
 glm::vec4 camera_lookat_l; // Ponto "l", para onde a câmera (look-at) estará sempre olhando
 glm::vec4 camera_view_vector = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f); // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 camera_up_vector = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-
-
-
 glm::vec4 camera_position_c_lookat = camera_position_c;
 glm::vec4 camera_view_vector_lookat = camera_view_vector;
+
+
+// Variáveis para controle dos AmongUs
+bool blue_alive = true;
+bool green_alive = true;
+bool orange_alive = true;
+bool pink_alive = true;
+bool white_alive = true;
+bool yellow_alive = true;
+
+glm::vec4 blue_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+glm::vec4 green_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+glm::vec4 orange_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+glm::vec4 pink_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+glm::vec4 white_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+glm::vec4 yellow_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -343,35 +381,26 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/amonguslow/texturePink.png");
     LoadTextureImage("../../data/amonguslow/textureWhite.png");
     LoadTextureImage("../../data/amonguslow/textureYellow.png");
+    LoadTextureImage("../../data/Axe/Axe.png");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
     ComputeNormals(&spheremodel);
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
-
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
-    ObjModel facemodel("../../data/face.obj");
-    ComputeNormals(&facemodel);
-    BuildTrianglesAndAddToVirtualScene(&facemodel);
-
-    ObjModel Gunmodel("../../data/Gun.obj");
-    ComputeNormals(&Gunmodel);
-    BuildTrianglesAndAddToVirtualScene(&Gunmodel);
-
-    ObjModel cubemodel("../../data/cube.obj");
-    ComputeNormals(&cubemodel);
-    BuildTrianglesAndAddToVirtualScene(&cubemodel);
-
+    // FONTE https://sketchfab.com/3d-models/low-poly-among-us-5c42677d2b014d01ada6af9310b69220
     ObjModel Amongmodel("../../data/amonguslow/Low Poly Among Us.obj");
     ComputeNormals(&Amongmodel);
     BuildTrianglesAndAddToVirtualScene(&Amongmodel);
+
+    // FONTE https://free3d.com/3d-model/leviathan-axe-god-of-war-433671.html
+    ObjModel Axemodel("../../data/Axe/untitled.obj");
+    ComputeNormals(&Axemodel);
+    BuildTrianglesAndAddToVirtualScene(&Axemodel);
 
     if ( argc > 1 )
     {
@@ -454,35 +483,29 @@ int main(int argc, char* argv[])
         {
             if(tecla_W_pressionada)
             {
-                //camera_position_c += camera_view_vector*speed*delta_t;
                 g_TorsoPositionX += cos(g_ViewPhi)*sin(g_ViewTheta)*speed*delta_t;
                 g_TorsoPositionZ += cos(g_ViewPhi)*cos(g_ViewTheta)*speed*delta_t;
-                //camera_position_c.x = g_TorsoPositionX + 0.5f;
             }
 
             if(tecla_A_pressionada)
             {
-                //camera_position_c -= camera_view_vector*Matrix_Rotate_Y(3.141592/2)*speed*delta_t;
                 g_TorsoPositionX += cos(g_ViewPhi)*cos(g_ViewTheta)*speed*delta_t;
                 g_TorsoPositionZ -= cos(g_ViewPhi)*sin(g_ViewTheta)*speed*delta_t;
             }
 
             if(tecla_S_pressionada)
             {
-                //camera_position_c -= camera_view_vector*speed*delta_t;
                 g_TorsoPositionX -= cos(g_ViewPhi)*sin(g_ViewTheta)*speed*delta_t;
                 g_TorsoPositionZ -= cos(g_ViewPhi)*cos(g_ViewTheta)*speed*delta_t;
             }
 
             if(tecla_D_pressionada)
             {
-                //camera_position_c += camera_view_vector*Matrix_Rotate_Y(3.141592/2)*speed*delta_t;
                 g_TorsoPositionX -= cos(g_ViewPhi)*cos(g_ViewTheta)*speed*delta_t;
                 g_TorsoPositionZ += cos(g_ViewPhi)*sin(g_ViewTheta)*speed*delta_t;
             }
 
-            //camera_position_c.x = g_TorsoPositionX - 0.5f;
-            //camera_position_c.z = g_TorsoPositionZ - 0.5f;
+            player_position = glm::vec4(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, 1.0f);
 
 
             direcao.x = cos(g_ViewPhi)*sin(g_ViewTheta);
@@ -544,6 +567,7 @@ int main(int argc, char* argv[])
 
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+        glm::mat4 model2 = Matrix_Identity();
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
         // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
@@ -551,125 +575,245 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define SPHERE 0
-        #define BUNNY  1
-        #define PLANE  2
-        #define FACE   4
-        #define CUBE   5
-        #define GUN    8
-        #define AMONG  9
-        #define SKYBOX 10
-        #define SUN    11
-        #define AMONG_BLUE 12
-        #define AMONG_GREEN 13
-        #define AMONG_ORANGE 14
-        #define AMONG_PINK 15
-        #define AMONG_WHITE 16
-        #define AMONG_YELLOW 17
-
-        // Boneco AZUL com movimento sobre uma Curva de Bézier de grau 3
-        glm::vec4 blue_control_point1 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
-        glm::vec4 blue_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
-        glm::vec4 blue_control_point3 = glm::vec4(3.0f, -0.5f, 3.0f, 1.0f);
-        glm::vec4 blue_control_point4 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
-        glm::vec4 blue_posicao = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), blue_control_point1, blue_control_point2, blue_control_point3, blue_control_point4);
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-        glUniform1i(g_object_id_uniform, AMONG_BLUE);
-        DrawVirtualObject("Body");
-        DrawVirtualObject("BackPack");
-        DrawVirtualObject("Glass");
-        DrawVirtualObject("Glass2");
-        DrawVirtualObject("Right");
-        DrawVirtualObject("Left");
-        DrawVirtualObject("Box");
 
 
-        // Boneco ORANGE com movimento sobre uma Curva de Bézier de grau 3
-        glm::vec4 orange_control_point1 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
-        glm::vec4 orange_control_point2 = glm::vec4(-8.0f, -0.5f, -7.0f, 1.0f);
-        glm::vec4 orange_control_point3 = glm::vec4(-2.0f, -0.5f, -5.0f, 1.0f);
-        glm::vec4 orange_control_point4 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
-        glm::vec4 orange_posicao = bezier_curve((float)glfwGetTime()/3 - floor((float)glfwGetTime()/3), orange_control_point1, orange_control_point2, orange_control_point3, orange_control_point4);
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
 
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        if (blue_alive)
+        {
+            // Boneco AZUL com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 blue_control_point1 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+            glm::vec4 blue_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
+            glm::vec4 blue_control_point3 = glm::vec4(3.0f, -0.5f, 3.0f, 1.0f);
+            glm::vec4 blue_control_point4 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+            blue_posicao = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), blue_control_point1, blue_control_point2, blue_control_point3, blue_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
 
-        glUniform1i(g_object_id_uniform, AMONG_ORANGE);
-        DrawVirtualObject("Body");
-        DrawVirtualObject("BackPack");
-        DrawVirtualObject("Glass");
-        DrawVirtualObject("Glass2");
-        DrawVirtualObject("Right");
-        DrawVirtualObject("Left");
-        DrawVirtualObject("Box");
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_BLUE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_BLUE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+
+        if(green_alive)
+        {
+            // Boneco VERDE com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 green_control_point1 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
+            glm::vec4 green_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
+            glm::vec4 green_control_point3 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
+            glm::vec4 green_control_point4 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
+            green_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), green_control_point1, green_control_point2, green_control_point3, green_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_GREEN);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_GREEN);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+
+        if(orange_alive)
+        {
+            // Boneco ORANGE com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 orange_control_point1 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+            glm::vec4 orange_control_point2 = glm::vec4(-8.0f, -0.5f, -7.0f, 1.0f);
+            glm::vec4 orange_control_point3 = glm::vec4(-2.0f, -0.5f, -5.0f, 1.0f);
+            glm::vec4 orange_control_point4 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+            orange_posicao = bezier_curve((float)glfwGetTime()/3 - floor((float)glfwGetTime()/3), orange_control_point1, orange_control_point2, orange_control_point3, orange_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_ORANGE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_ORANGE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+
+        if(pink_alive)
+        {
+            // Boneco PINK com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 pink_control_point1 = glm::vec4(5.0f,  -0.5f, -4.0f, 1.0f);
+            glm::vec4 pink_control_point2 = glm::vec4(-4.0f, -0.5f, -1.0f, 1.0f);
+            glm::vec4 pink_control_point3 = glm::vec4(10.0f, -0.5f, -12.0f, 1.0f);
+            glm::vec4 pink_control_point4 = glm::vec4(5.0f, -0.5f, -4.0f, 1.0f);
+            pink_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), pink_control_point1, pink_control_point2, pink_control_point3, pink_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_PINK);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_PINK);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+
+        if(white_alive)
+        {
+            // Boneco WHITE com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 white_control_point1 = glm::vec4(-5.0f,  -0.5f, -3.0f, 1.0f);
+            glm::vec4 white_control_point2 = glm::vec4(0.0f, -0.5f, 5.0f, 1.0f);
+            glm::vec4 white_control_point3 = glm::vec4(5.0f, -0.5f, -7.0f, 1.0f);
+            glm::vec4 white_control_point4 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
+            white_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), white_control_point1, white_control_point2, white_control_point3, white_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_WHITE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_WHITE);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+
+        if(yellow_alive)
+        {
+            // Boneco YELLOW com movimento sobre uma Curva de Bézier de grau 3
+            glm::vec4 yellow_control_point1 = glm::vec4(2.0f,  -0.5f, 0.0f, 1.0f);
+            glm::vec4 yellow_control_point2 = glm::vec4(3.0f, -0.5f, 5.0f, 1.0f);
+            glm::vec4 yellow_control_point3 = glm::vec4(5.0f, -0.5f, 10.0f, 1.0f);
+            glm::vec4 yellow_control_point4 = glm::vec4(2.0f, -0.5f, 0.0f, 1.0f);
+            yellow_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), yellow_control_point1, yellow_control_point2, yellow_control_point3, yellow_control_point4);
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_YELLOW);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
+        else
+        {
+            model = Matrix_Identity(); // Transformação inicial = identidade.
+            model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, AMONG_YELLOW);
+            DrawVirtualObject("Body");
+            DrawVirtualObject("BackPack");
+            DrawVirtualObject("Glass");
+            DrawVirtualObject("Glass2");
+            DrawVirtualObject("Right");
+            DrawVirtualObject("Left");
+            DrawVirtualObject("Box");
+        }
 
 
-        // Boneco PINK com movimento sobre uma Curva de Bézier de grau 3
-        glm::vec4 pink_control_point1 = glm::vec4(5.0f,  -0.5f, -4.0f, 1.0f);
-        glm::vec4 pink_control_point2 = glm::vec4(-4.0f, -0.5f, -1.0f, 1.0f);
-        glm::vec4 pink_control_point3 = glm::vec4(10.0f, -0.5f, -12.0f, 1.0f);
-        glm::vec4 pink_control_point4 = glm::vec4(5.0f, -0.5f, -4.0f, 1.0f);
-        glm::vec4 pink_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), pink_control_point1, pink_control_point2, pink_control_point3, pink_control_point4);
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
 
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-        glUniform1i(g_object_id_uniform, AMONG_PINK);
-        DrawVirtualObject("Body");
-        DrawVirtualObject("BackPack");
-        DrawVirtualObject("Glass");
-        DrawVirtualObject("Glass2");
-        DrawVirtualObject("Right");
-        DrawVirtualObject("Left");
-        DrawVirtualObject("Box");
-
-
-        // Boneco WHITE com movimento sobre uma Curva de Bézier de grau 3
-        glm::vec4 white_control_point1 = glm::vec4(-5.0f,  -0.5f, -3.0f, 1.0f);
-        glm::vec4 white_control_point2 = glm::vec4(0.0f, -0.5f, 5.0f, 1.0f);
-        glm::vec4 white_control_point3 = glm::vec4(5.0f, -0.5f, -7.0f, 1.0f);
-        glm::vec4 white_control_point4 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
-        glm::vec4 white_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), white_control_point1, white_control_point2, white_control_point3, white_control_point4);
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-        glUniform1i(g_object_id_uniform, AMONG_WHITE);
-        DrawVirtualObject("Body");
-        DrawVirtualObject("BackPack");
-        DrawVirtualObject("Glass");
-        DrawVirtualObject("Glass2");
-        DrawVirtualObject("Right");
-        DrawVirtualObject("Left");
-        DrawVirtualObject("Box");
-
-
-        // Boneco YELLOW com movimento sobre uma Curva de Bézier de grau 3
-        glm::vec4 yellow_control_point1 = glm::vec4(2.0f,  -0.5f, 0.0f, 1.0f);
-        glm::vec4 yellow_control_point2 = glm::vec4(3.0f, -0.5f, 5.0f, 1.0f);
-        glm::vec4 yellow_control_point3 = glm::vec4(5.0f, -0.5f, 10.0f, 1.0f);
-        glm::vec4 yellow_control_point4 = glm::vec4(2.0f, -0.5f, 0.0f, 1.0f);
-        glm::vec4 yellow_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), yellow_control_point1, yellow_control_point2, yellow_control_point3, yellow_control_point4);
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-        glUniform1i(g_object_id_uniform, AMONG_YELLOW);
-        DrawVirtualObject("Body");
-        DrawVirtualObject("BackPack");
-        DrawVirtualObject("Glass");
-        DrawVirtualObject("Glass2");
-        DrawVirtualObject("Right");
-        DrawVirtualObject("Left");
-        DrawVirtualObject("Box");
 
 
 
@@ -681,6 +825,7 @@ int main(int argc, char* argv[])
             PushMatrix(model);
 
                 model = model * Matrix_Rotate_Y(g_ViewTheta) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+                model2 = model;
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                 glUniform1i(g_object_id_uniform, AMONG);
                 DrawVirtualObject("Body");
@@ -716,6 +861,8 @@ int main(int argc, char* argv[])
                 DrawVirtualObject("the_sphere");
                 glEnable(GL_CULL_FACE);
             PopMatrix(model);
+
+            PushMatrix(model);
                 // Desenhamos o modelo do Sol
                 model = model * Matrix_Translate(5.0f, 5.0f, 5.0f)
                       * Matrix_Scale(3.0f, 3.0f, 3.0f);
@@ -723,17 +870,20 @@ int main(int argc, char* argv[])
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                 glUniform1i(g_object_id_uniform, SUN);
                 DrawVirtualObject("the_sphere");
+            PopMatrix(model);
+
+            PushMatrix(model);
+                // Desenhamos o modelo do Axe
+                //model = model * Matrix_Translate(1.0f, 0.0f, 1.0f)
+                //      * Matrix_Scale(0.1f, 0.1f, 0.1f) * Matrix_Rotate_Y(g_ViewTheta) * Matrix_Rotate_X(3.141592/2) * Matrix_Rotate_Z(3.141592/2);
+                model = model2 * Matrix_Translate(-1.0f, 0.9f, 1.0f) * Matrix_Scale(0.1f, 0.075f, 0.1f) * Matrix_Rotate_X(3.141592/2) * Matrix_Rotate_Z(3.141592/2);
+
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, AXE);
+                DrawVirtualObject("Axe_Cylinder.003");
+            PopMatrix(model);
 
         PopMatrix(model);
-
-        // Desenhamos o modelo do coelho
-//        model = Matrix_Translate(1.0f,0.0f,0.0f)
-//              * Matrix_Rotate_Z(g_AngleZ)
-//              * Matrix_Rotate_Y(g_AngleY)
-//              * Matrix_Rotate_X(g_AngleX);
-//        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-//        glUniform1i(g_object_id_uniform, BUNNY);
-//        DrawVirtualObject("the_bunny");
 
         for(float i = -50;i <50; i++)
             for(float j = -50;j <50; j++)
@@ -745,208 +895,47 @@ int main(int argc, char* argv[])
         }
 
 
-        // Desenhamos o modelo da arma
-//        model = Matrix_Identity() * Matrix_Translate(2.0f,1.0f,0.0f)*Matrix_Scale(2.0f, 2.0f, 2.0f);
-//        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-//        glUniform1i(g_object_id_uniform, GUN);
-//        DrawVirtualObject("Cube.007_Cube.012");
+        if(tecla_E_pressionada)
+        {
+            glm::vec4 distancia_blue = player_position - blue_posicao;
+            glm::vec4 distancia_green = player_position - green_posicao;
+            glm::vec4 distancia_orange = player_position - orange_posicao;
+            glm::vec4 distancia_pink = player_position - pink_posicao;
+            glm::vec4 distancia_white = player_position - white_posicao;
+            glm::vec4 distancia_yellow = player_position - yellow_posicao;
 
-//
-//        // Desenhamos o modelo do personagem
-//        {
-//
-//        // Translação inicial do torso
-//        model = Matrix_Identity(); // Transformação inicial = identidade.
-//        model = model * Matrix_Translate(g_TorsoPositionX /*- 1.0f*/, g_TorsoPositionY, g_TorsoPositionZ) * Matrix_Rotate_Y(g_ViewTheta);
-//        // Guardamos matriz model atual na pilha
-//        PushMatrix(model);
-//            // Atualizamos a matriz model (multiplicação à direita) para fazer um escalamento do torso
-//            model = model * Matrix_Scale(0.4f, 0.5f, 0.15f);
-//            // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
-//            // arquivo "shader_vertex.glsl", onde esta é efetivamente
-//            // aplicada em todos os pontos.
-//            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-//            // Desenhamos um cubo. Esta renderização irá executar o Vertex
-//            // Shader definido no arquivo "shader_vertex.glsl", e o mesmo irá
-//            // utilizar as matrizes "model", "view" e "projection" definidas
-//            // acima e já enviadas para a placa de vídeo (GPU).
-//            DrawVirtualObject("the_cube"); // #### TORSO
-//        // Tiramos da pilha a matriz model guardada anteriormente
-//        PopMatrix(model);
-//
-//        // Braço direito
-//        PushMatrix(model); // Guardamos matriz model atual na pilha
-//            model = model * Matrix_Translate(-0.3f, 0.1f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço direito
-//            PushMatrix(model); // Guardamos matriz model atual na pilha
-//                //model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do braço direito
-//                  //    * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
-//                    //  * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
-//                      //* Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
-//                PushMatrix(model); // Guardamos matriz model atual na pilha
-//                    model = model * Matrix_Scale(0.1f, 0.3f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço direito
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube"); // #### BRAÇO DIREITO // Desenhamos o braço direito
-//                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//
-//                // Antebraço
-//                PushMatrix(model); // Guardamos matriz model atual na pilha
-//                    model = model * Matrix_Translate(0.0f, -0.1f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço direito
-//                    model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço direito
-//                          //* Matrix_Rotate_Z(g_ForearmAngleZ)  // SEGUNDO rotação Z de Euler
-//                          * Matrix_Rotate_X(-3.141592/2/*g_ForearmAngleX*/); // PRIMEIRO rotação X de Euler
-//                    PushMatrix(model); // Guardamos matriz model atual na pilha
-//                        model = model * Matrix_Scale(0.1f, 0.3f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço direito
-//                        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                        DrawVirtualObject("the_cube"); // #### ANTEBRAÇO DIREITO // Desenhamos o antebraço direito
-//                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//                    PushMatrix(model);
-//                        model = model * Matrix_Translate(0.0f, -0.2f, 0.0f);
-//                        model = model * Matrix_Scale(0.1f, 0.05f, 0.1f);
-//                        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                        DrawVirtualObject("the_cube");
-//                    PopMatrix(model);
-//
-//                    PushMatrix(model);
-//
-//                        model = model * Matrix_Translate(0.0f,-0.4f,0.03f) * Matrix_Scale(0.5f, 0.5f, 0.5f)*Matrix_Rotate_Y(3.141592/2)*Matrix_Rotate_Z(3.141592/2);
-//                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-//                        glUniform1i(g_object_id_uniform, GUN);
-//                        DrawVirtualObject("Cube.007_Cube.012");
-//
-//                    PopMatrix(model);
-//
-//                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//
-//
-//       // Braço Esquerdo
-//       PushMatrix(model); // Guardamos matriz model atual na pilha
-//            model = model * Matrix_Translate(0.3f, 0.1f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço direito
-//            PushMatrix(model); // Guardamos matriz model atual na pilha
-//                //model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do braço direito
-//                  //    * Matrix_Rotate_Z(-g_AngleZ)  // TERCEIRO rotação Z de Euler
-//                    //  * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
-//                      //* Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
-//                PushMatrix(model); // Guardamos matriz model atual na pilha
-//                    model = model * Matrix_Scale(0.1f, 0.3f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço direito
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube"); // #### BRAÇO DIREITO // Desenhamos o braço direito
-//                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//
-//                // Antebraço
-//                PushMatrix(model); // Guardamos matriz model atual na pilha
-//                    model = model * Matrix_Translate(0.0f, -0.35f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço direito
-//                    //model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço direito
-//                          //* Matrix_Rotate_Z(-1*g_ForearmAngleZ)  // SEGUNDO rotação Z de Euler
-//                          //* Matrix_Rotate_X(g_ForearmAngleX); // PRIMEIRO rotação X de Euler
-//                    PushMatrix(model); // Guardamos matriz model atual na pilha
-//                        model = model * Matrix_Scale(0.1f, 0.3f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço direito
-//                        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                        DrawVirtualObject("the_cube"); // #### ANTEBRAÇO DIREITO // Desenhamos o antebraço direito
-//                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//                    PushMatrix(model);
-//                        model = model * Matrix_Translate(0.0f, -0.2f, 0.0f);
-//                        model = model * Matrix_Scale(0.1f, 0.05, 0.1f);
-//                        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                        DrawVirtualObject("the_cube");
-//                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
-//
-//        PushMatrix(model);
-//
-//            model = model * Matrix_Translate(0.0f, 0.35f, 0.0f)
-//            * Matrix_Scale(0.15f, -0.15f, 0.15f)
-//            * Matrix_Rotate_X(0.8f*3.141592)
-//            * Matrix_Rotate_Y(3.141592);
-//
-//
-//            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//            DrawVirtualObject("the_face");
-//        PopMatrix(model);
-//
-//        // PERNA DIREITA
-//        PushMatrix(model);
-//            model = model * Matrix_Translate(-0.1f, -0.5f, 0.0f);
-//            PushMatrix(model);
-//                model = model * Matrix_Scale(0.175f, 0.375f, 0.15f);
-//                glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                DrawVirtualObject("the_cube");
-//            PopMatrix(model);
-//
-//            PushMatrix(model); // Canela
-//                model = model * Matrix_Translate(0.0f, -0.425f, 0.0f);
-//                PushMatrix(model);
-//                    model = model * Matrix_Scale(0.15f, 0.375f, 0.1f);
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube");
-//                PopMatrix(model);
-//            //PopMatrix(model);
-//
-//                PushMatrix(model); // Pé
-//                    model = model * Matrix_Translate(0.0f, -0.25f, 0.11f);
-//                    model = model * Matrix_Scale(0.125f, 0.05f, 0.275f);
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube");
-//                PopMatrix(model);
-//            PopMatrix(model);
-//        PopMatrix(model);
-//
-//
-//        // PERNA ESQUERDA
-//
-//        PushMatrix(model);
-//            model = model * Matrix_Translate(0.1f, -0.5f, 0.0f);
-//            PushMatrix(model);
-//                model = model * Matrix_Scale(0.175f, 0.375f, 0.15f);
-//                glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                DrawVirtualObject("the_cube");
-//            PopMatrix(model);
-//
-//            PushMatrix(model); // Canela
-//                model = model * Matrix_Translate(0.0f, -0.425f, 0.0f);
-//                PushMatrix(model);
-//                    model = model * Matrix_Scale(0.15f, 0.375f, 0.1f);
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube");
-//                PopMatrix(model);
-//            //PopMatrix(model);
-//
-//                PushMatrix(model); // Pé
-//                    model = model * Matrix_Translate(0.0f, -0.25f, 0.11f);
-//                    model = model * Matrix_Scale(0.125f, 0.05f, 0.275f);
-//                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
-//                    DrawVirtualObject("the_cube");
-//                PopMatrix(model);
-//            PopMatrix(model);
-//        PopMatrix(model);
-//
-//
-//
-//
-//        // Desenhamos o modelo da esfera
-//        model = Matrix_Translate(g_TorsoPositionX + 4.5f, g_TorsoPositionY + 1.75f, g_TorsoPositionZ + 4.5f)*
-//        //model = model * Matrix_Translate(-1.0f,2.0f,2.0f) *
-//
-//                Matrix_Scale(1.75f, 1.75f, 1.75f)
-//              * Matrix_Rotate_Z(0.6f)
-//              * Matrix_Rotate_X(0.2f)
-//              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 1.0f);
-//
-//        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-//        glUniform1i(g_object_id_uniform, SPHERE);
-//        DrawVirtualObject("the_sphere");
-//        }
-//
-//
+            float distancia_norma_blue = sqrt(distancia_blue.x*distancia_blue.x + distancia_blue.y*distancia_blue.y + distancia_blue.z*distancia_blue.z);
+            float distancia_norma_green = sqrt(distancia_green.x*distancia_green.x + distancia_green.y*distancia_green.y + distancia_green.z*distancia_green.z);
+            float distancia_norma_orange = sqrt(distancia_orange.x*distancia_orange.x + distancia_orange.y*distancia_orange.y + distancia_orange.z*distancia_orange.z);
+            float distancia_norma_pink = sqrt(distancia_pink.x*distancia_pink.x + distancia_pink.y*distancia_pink.y + distancia_pink.z*distancia_pink.z);
+            float distancia_norma_white = sqrt(distancia_white.x*distancia_white.x + distancia_white.y*distancia_white.y + distancia_white.z*distancia_white.z);
+            float distancia_norma_yellow = sqrt(distancia_yellow.x*distancia_yellow.x + distancia_yellow.y*distancia_yellow.y + distancia_yellow.z*distancia_yellow.z);
 
-
-        //model = Matrix_Translate(-2.0f,1.0f,2.0f)*Matrix_Scale(1.0f, 1.0f, 1.0f)*Matrix_Rotate_Y(3.141592);
-        //glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //glUniform1i(g_object_id_uniform, CUBE);
-        //DrawVirtualObject("the_cube");
+            if (distancia_norma_blue < 1)
+            {
+                blue_alive = false;
+            }
+            else if (distancia_norma_green < 1)
+            {
+                green_alive = false;
+            }
+            else if (distancia_norma_orange < 1)
+            {
+                orange_alive = false;
+            }
+            else if (distancia_norma_pink < 1)
+            {
+                pink_alive = false;
+            }
+            else if (distancia_norma_white < 1)
+            {
+                white_alive = false;
+            }
+            else if (distancia_norma_yellow < 1)
+            {
+                yellow_alive = false;
+            }
+        }
 
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
@@ -1118,6 +1107,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage13"), 13);
     glUseProgram(0);
 }
 
@@ -1733,6 +1723,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         else if (action == GLFW_RELEASE)
             // Usuário largou a tecla D, então atualizamos o estado para NÃO pressionada
             tecla_D_pressionada = false;
+
+        else if (action == GLFW_REPEAT)
+            // Usuário está segurando a tecla D e o sistema operacional está
+            // disparando eventos de repetição. Neste caso, não precisamos
+            // atualizar o estado da tecla, pois antes de um evento REPEAT
+            // necessariamente deve ter ocorrido um evento PRESS.
+            ;
+    }
+
+    if (key == GLFW_KEY_E)
+    {
+        if (action == GLFW_PRESS)
+            // Usuário apertou a tecla E, então atualizamos o estado para pressionada
+            tecla_E_pressionada = true;
+
+        else if (action == GLFW_RELEASE)
+            // Usuário largou a tecla E, então atualizamos o estado para NÃO pressionada
+            tecla_E_pressionada = false;
 
         else if (action == GLFW_REPEAT)
             // Usuário está segurando a tecla D e o sistema operacional está

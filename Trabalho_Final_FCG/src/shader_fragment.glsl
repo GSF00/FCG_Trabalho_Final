@@ -37,6 +37,7 @@ uniform mat4 projection;
 #define AMONG_PINK 15
 #define AMONG_WHITE 16
 #define AMONG_YELLOW 17
+#define AXE     18
 
 uniform int object_id;
 
@@ -58,7 +59,7 @@ uniform sampler2D TextureImage9;
 uniform sampler2D TextureImage10;
 uniform sampler2D TextureImage11;
 uniform sampler2D TextureImage12;
-
+uniform sampler2D TextureImage13;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -100,11 +101,17 @@ void main()
     float V = 0.0;
 
     // Parâmetros que definem as propriedades espectrais da superfície
-    vec3 Kd; // Refletância difusa
+    vec3 Kd0; // Refletância difusa
     vec3 Ks; // Refletância especular
-    vec3 Ka; // Refletância ambiente
     float q; // Expoente especular para o modelo de iluminação de Phong
-    vec3 Kd0;
+
+    // Espectro da fonte de iluminação
+    vec3 I = vec3(1.0,1.0,1.0); // o espectro da fonte de luz
+
+    // Termo especular utilizando o modelo de iluminação de Phong
+    vec3 phong_specular_term  = vec3(0.0,0.0,0.0);
+
+    //phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
 
     // Mapeamento de Textura
     if(object_id == SPHERE || object_id == SKYBOX || object_id == SUN)
@@ -143,7 +150,10 @@ void main()
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage4
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if (object_id == SKYBOX)
     {
@@ -161,37 +171,64 @@ void main()
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage7
         Kd0 = texture(TextureImage7, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if(object_id == AMONG_GREEN)
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage8
         Kd0 = texture(TextureImage8, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if(object_id == AMONG_ORANGE)
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage9
         Kd0 = texture(TextureImage9, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if(object_id == AMONG_PINK)
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage10
         Kd0 = texture(TextureImage10, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if(object_id == AMONG_WHITE)
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage11
         Kd0 = texture(TextureImage11, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
     else if(object_id == AMONG_YELLOW)
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage12
         Kd0 = texture(TextureImage12, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (lambert + 0.03);
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
+    }
+    else if(object_id == AXE)
+    {
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage13
+        Kd0 = texture(TextureImage13, vec2(U,V)).rgb;
+        q = 20.0f;
+        Ks = vec3(0.3f, 0.3f, 0.3f);
+        phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
+        color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
     }
 
     // Alpha default = 1 = 100% opaco = 0% transparente
