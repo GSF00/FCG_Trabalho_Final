@@ -567,14 +567,14 @@ int main(int argc, char* argv[])
         #define AMONG_WHITE 16
         #define AMONG_YELLOW 17
 
-        // Boneco com movimento sobre a Curva de Bézier de grau 3
-        glm::vec4 control_point1 = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-        glm::vec4 control_point2 = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-        glm::vec4 control_point3 = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-        glm::vec4 control_point4 = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-        glm::vec4 posicao1 = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), control_point1, control_point2, control_point3, control_point4);
+        // Boneco AZUL com movimento sobre uma Curva de Bézier de grau 3
+        glm::vec4 blue_control_point1 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+        glm::vec4 blue_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
+        glm::vec4 blue_control_point3 = glm::vec4(3.0f, -0.5f, 3.0f, 1.0f);
+        glm::vec4 blue_control_point4 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+        glm::vec4 blue_posicao = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), blue_control_point1, blue_control_point2, blue_control_point3, blue_control_point4);
         model = Matrix_Identity(); // Transformação inicial = identidade.
-        model = model * Matrix_Translate(posicao1.x, posicao1.y, posicao1.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
 
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
 
@@ -586,6 +586,92 @@ int main(int argc, char* argv[])
         DrawVirtualObject("Right");
         DrawVirtualObject("Left");
         DrawVirtualObject("Box");
+
+
+        // Boneco ORANGE com movimento sobre uma Curva de Bézier de grau 3
+        glm::vec4 orange_control_point1 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+        glm::vec4 orange_control_point2 = glm::vec4(-8.0f, -0.5f, -7.0f, 1.0f);
+        glm::vec4 orange_control_point3 = glm::vec4(-2.0f, -0.5f, -5.0f, 1.0f);
+        glm::vec4 orange_control_point4 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+        glm::vec4 orange_posicao = bezier_curve((float)glfwGetTime()/3 - floor((float)glfwGetTime()/3), orange_control_point1, orange_control_point2, orange_control_point3, orange_control_point4);
+        model = Matrix_Identity(); // Transformação inicial = identidade.
+        model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+        glUniform1i(g_object_id_uniform, AMONG_ORANGE);
+        DrawVirtualObject("Body");
+        DrawVirtualObject("BackPack");
+        DrawVirtualObject("Glass");
+        DrawVirtualObject("Glass2");
+        DrawVirtualObject("Right");
+        DrawVirtualObject("Left");
+        DrawVirtualObject("Box");
+
+
+        // Boneco PINK com movimento sobre uma Curva de Bézier de grau 3
+        glm::vec4 pink_control_point1 = glm::vec4(5.0f,  -0.5f, -4.0f, 1.0f);
+        glm::vec4 pink_control_point2 = glm::vec4(-4.0f, -0.5f, -1.0f, 1.0f);
+        glm::vec4 pink_control_point3 = glm::vec4(10.0f, -0.5f, -12.0f, 1.0f);
+        glm::vec4 pink_control_point4 = glm::vec4(5.0f, -0.5f, -4.0f, 1.0f);
+        glm::vec4 pink_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), pink_control_point1, pink_control_point2, pink_control_point3, pink_control_point4);
+        model = Matrix_Identity(); // Transformação inicial = identidade.
+        model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+        glUniform1i(g_object_id_uniform, AMONG_PINK);
+        DrawVirtualObject("Body");
+        DrawVirtualObject("BackPack");
+        DrawVirtualObject("Glass");
+        DrawVirtualObject("Glass2");
+        DrawVirtualObject("Right");
+        DrawVirtualObject("Left");
+        DrawVirtualObject("Box");
+
+
+        // Boneco WHITE com movimento sobre uma Curva de Bézier de grau 3
+        glm::vec4 white_control_point1 = glm::vec4(-5.0f,  -0.5f, -3.0f, 1.0f);
+        glm::vec4 white_control_point2 = glm::vec4(0.0f, -0.5f, 5.0f, 1.0f);
+        glm::vec4 white_control_point3 = glm::vec4(5.0f, -0.5f, -7.0f, 1.0f);
+        glm::vec4 white_control_point4 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
+        glm::vec4 white_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), white_control_point1, white_control_point2, white_control_point3, white_control_point4);
+        model = Matrix_Identity(); // Transformação inicial = identidade.
+        model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+        glUniform1i(g_object_id_uniform, AMONG_WHITE);
+        DrawVirtualObject("Body");
+        DrawVirtualObject("BackPack");
+        DrawVirtualObject("Glass");
+        DrawVirtualObject("Glass2");
+        DrawVirtualObject("Right");
+        DrawVirtualObject("Left");
+        DrawVirtualObject("Box");
+
+
+        // Boneco YELLOW com movimento sobre uma Curva de Bézier de grau 3
+        glm::vec4 yellow_control_point1 = glm::vec4(2.0f,  -0.5f, 0.0f, 1.0f);
+        glm::vec4 yellow_control_point2 = glm::vec4(3.0f, -0.5f, 5.0f, 1.0f);
+        glm::vec4 yellow_control_point3 = glm::vec4(5.0f, -0.5f, 10.0f, 1.0f);
+        glm::vec4 yellow_control_point4 = glm::vec4(2.0f, -0.5f, 0.0f, 1.0f);
+        glm::vec4 yellow_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), yellow_control_point1, yellow_control_point2, yellow_control_point3, yellow_control_point4);
+        model = Matrix_Identity(); // Transformação inicial = identidade.
+        model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+        glUniform1i(g_object_id_uniform, AMONG_YELLOW);
+        DrawVirtualObject("Body");
+        DrawVirtualObject("BackPack");
+        DrawVirtualObject("Glass");
+        DrawVirtualObject("Glass2");
+        DrawVirtualObject("Right");
+        DrawVirtualObject("Left");
+        DrawVirtualObject("Box");
+
+
 
 
         model = Matrix_Identity(); // Transformação inicial = identidade.
