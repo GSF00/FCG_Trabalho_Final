@@ -144,7 +144,7 @@ void main()
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage2
         Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
-        color.rgb = Kd0;
+        color.rgb = Kd0 * (lambert + 0.03);
     }
     else if (object_id == AMONG)
     {
@@ -159,7 +159,7 @@ void main()
     {
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage5
         Kd0 = texture(TextureImage5, vec2(U,V)).rgb;
-        color.rgb = Kd0 * (1.0);
+        color.rgb = Kd0 * (lambert + 0.03);
     }
     else if (object_id == SUN)
     {

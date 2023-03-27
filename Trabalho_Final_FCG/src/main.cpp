@@ -159,15 +159,16 @@ void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm
 void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_Aim(GLFWwindow* window);
+void TextRendering_Murders_left(GLFWwindow* window);
 
 // Função que calcula a Curva de Bézier de grau 3
 glm::vec4 bezier_curve(float t, glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, glm::vec4 p4);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow* window);
-void TextRendering_ShowProjection(GLFWwindow* window);
+//void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
+////void TextRendering_ShowEulerAngles(GLFWwindow* window);
+//void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
@@ -276,12 +277,12 @@ glm::vec4 camera_view_vector_lookat = camera_view_vector;
 
 
 // Variáveis para controle dos AmongUs
-bool blue_alive = true;
-bool green_alive = true;
-bool orange_alive = true;
-bool pink_alive = true;
-bool white_alive = true;
-bool yellow_alive = true;
+int blue_alive = 1;
+int green_alive = 1;
+int orange_alive = 1;
+int pink_alive = 1;
+int white_alive = 1;
+int yellow_alive = 1;
 
 glm::vec4 blue_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 glm::vec4 green_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -289,6 +290,8 @@ glm::vec4 orange_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 glm::vec4 pink_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 glm::vec4 white_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 glm::vec4 yellow_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+int murders_left = 6;
 
 
 // Número de texturas carregadas pela função LoadTextureImage()
@@ -470,6 +473,7 @@ int main(int argc, char* argv[])
 
             camera_position_c_lookat  = glm::vec4(x,y,z,1.0f);
             camera_lookat_l = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+            //camera_lookat_l = player_position + direcao;
             //camera_lookat_l    = camera_position_c + camera_view_vector;
             camera_view_vector_lookat = camera_lookat_l - camera_position_c_lookat;
 
@@ -515,9 +519,6 @@ int main(int argc, char* argv[])
             //camera_position_c -= direcao;
 
             camera_position_c = glm::vec4(g_TorsoPositionX - g_CameraDistance/2*direcao.x, 0.8, g_TorsoPositionZ - g_CameraDistance/2*direcao.z, 1.0f);
-
-            //if(camera_position_c.y != 3.0)
-              //  camera_position_c.y = 3.0;
 
             camera_view_vector = glm::vec4(cos(g_ViewPhi)*sin(g_ViewTheta), sin(g_ViewPhi),cos(g_ViewPhi)*cos(g_ViewTheta),0.0f);
 
@@ -888,7 +889,7 @@ int main(int argc, char* argv[])
         for(float i = -50;i <50; i++)
             for(float j = -50;j <50; j++)
         {
-            model = Matrix_Identity()* Matrix_Translate(4*i, -0.5f, 4*j) * Matrix_Scale(2.0f, 0.0f, 2.0f);
+            model = Matrix_Identity()* Matrix_Translate(4*i, -0.5f, 4*j) * Matrix_Scale(2.0f, 1.0f, 2.0f);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, PLANE);
             DrawVirtualObject("the_plane");
@@ -913,43 +914,47 @@ int main(int argc, char* argv[])
 
             if (distancia_norma_blue < 1)
             {
-                blue_alive = false;
+                blue_alive = 0;
             }
             else if (distancia_norma_green < 1)
             {
-                green_alive = false;
+                green_alive = 0;
             }
             else if (distancia_norma_orange < 1)
             {
-                orange_alive = false;
+                orange_alive = 0;
             }
             else if (distancia_norma_pink < 1)
             {
-                pink_alive = false;
+                pink_alive = 0;
             }
             else if (distancia_norma_white < 1)
             {
-                white_alive = false;
+                white_alive = 0;
             }
             else if (distancia_norma_yellow < 1)
             {
-                yellow_alive = false;
+                yellow_alive = 0;
             }
+
+            murders_left = blue_alive + green_alive + orange_alive + pink_alive + white_alive + yellow_alive;
         }
 
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
+//        TextRendering_ShowEulerAngles(window);
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
+//        TextRendering_ShowProjection(window);
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
 
         TextRendering_Aim(window);
+
+        TextRendering_Murders_left(window);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1000,8 +1005,8 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, /*GL_REPEAT*/ GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, /*GL_REPEAT*/ GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Parâmetros de amostragem da textura.
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -1584,7 +1589,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f/2;
-        float phimin = -phimax;
+        float phimin = -phimax + 3.141592f/3;
 
         if (g_ViewPhi > phimax)
             g_ViewPhi = phimax;
@@ -1853,18 +1858,18 @@ void TextRendering_ShowModelViewProjection(
 
 // Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
 // g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window)
-{
-    if ( !g_ShowInfoText )
-        return;
-
-    float pad = TextRendering_LineHeight(window);
-
-    char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
-}
+//void TextRendering_ShowEulerAngles(GLFWwindow* window)
+//{
+//    if ( !g_ShowInfoText )
+//        return;
+//
+//    float pad = TextRendering_LineHeight(window);
+//
+//    char buffer[80];
+//    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
+//
+//    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
+//}
 
 void TextRendering_Aim(GLFWwindow* window)
 {
@@ -1873,10 +1878,23 @@ void TextRendering_Aim(GLFWwindow* window)
 
     float pad = TextRendering_LineHeight(window);
 
-    char buffer[80];
+    char buffer[2];
     snprintf(buffer, 80, "+");
 
     TextRendering_PrintString(window, buffer, -0.1f+pad, -0.1f+2*pad, 5.0f);
+}
+
+void TextRendering_Murders_left(GLFWwindow* window)
+{
+    if ( !g_ShowInfoText )
+        return;
+
+    float pad = TextRendering_LineHeight(window);
+
+    char buffer[80];
+    snprintf(buffer, 80, "Murders Left: %d", murders_left);
+
+    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.5f);
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
