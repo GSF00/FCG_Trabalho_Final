@@ -55,10 +55,7 @@
 #include "matrices.h"
 
 #define SPHERE          0
-#define BUNNY           1
 #define PLANE           2
-#define FACE            4
-#define CUBE            5
 #define GUN             8
 #define AMONG           9
 #define SKYBOX          10
@@ -70,6 +67,8 @@
 #define AMONG_WHITE     16
 #define AMONG_YELLOW    17
 #define AXE             18
+#define START           19
+#define VICTORY         20
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -166,9 +165,6 @@ glm::vec4 bezier_curve(float t, glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, glm::v
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
-//void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-////void TextRendering_ShowEulerAngles(GLFWwindow* window);
-//void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
@@ -221,11 +217,12 @@ bool tecla_A_pressionada = false;
 bool tecla_S_pressionada = false;
 bool tecla_D_pressionada = false;
 bool tecla_E_pressionada = false;
+bool tecla_ENTER_pressionada = false;
 
 
 // Ângulos que controlam o vetor View da câmera livre
 float g_ViewTheta = 0.0f;
-float g_ViewPhi = -3.141592/8;
+float g_ViewPhi = 0;//-3.141592/8;
 
 // Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
 // usuário através do mouse (veja função CursorPosCallback()). A posição
@@ -293,6 +290,10 @@ glm::vec4 yellow_posicao = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 int murders_left = 6;
 
+glm::vec4 first_position;
+glm::vec4 first_view;
+bool first = true;
+
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -326,7 +327,7 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "INF01047 - 00288913 - Guilherme Schaab Fisch", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Among Us da Deep Web", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -375,7 +376,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif");
     LoadTextureImage("../../data/moon.jpg");
     LoadTextureImage("../../data/Gun _obj/Gun.png");
-    LoadTextureImage("../../data/amonguslow/texture100.png");
+    LoadTextureImage("../../data/amonguslow/textureRed.png");
     LoadTextureImage("../../data/skybox.jpg");
     LoadTextureImage("../../data/sun.jpg");
     LoadTextureImage("../../data/amonguslow/textureBlue.png");
@@ -385,6 +386,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/amonguslow/textureWhite.png");
     LoadTextureImage("../../data/amonguslow/textureYellow.png");
     LoadTextureImage("../../data/Axe/Axe.png");
+    LoadTextureImage("../../data/amonguslow/amongus.jpg");
+    LoadTextureImage("../../data/amonguslow/victory.jpg");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -457,7 +460,7 @@ int main(int argc, char* argv[])
         prev_time = current_time;
 
 
-
+        // Câmera Look At
         if(g_LookAtCamera)
         {
             // Computamos a posição da câmera utilizando coordenadas esféricas.  As
@@ -473,8 +476,6 @@ int main(int argc, char* argv[])
 
             camera_position_c_lookat  = glm::vec4(x,y,z,1.0f);
             camera_lookat_l = glm::vec4(0.0f,0.0f,0.0f,1.0f);
-            //camera_lookat_l = player_position + direcao;
-            //camera_lookat_l    = camera_position_c + camera_view_vector;
             camera_view_vector_lookat = camera_lookat_l - camera_position_c_lookat;
 
 
@@ -483,8 +484,10 @@ int main(int argc, char* argv[])
             view = Matrix_Camera_View(camera_position_c_lookat, camera_view_vector_lookat, camera_up_vector);
         }
 
+        // Free Câmera
         else
         {
+            // Movimentação da câmera e do personagem principal
             if(tecla_W_pressionada)
             {
                 g_TorsoPositionX += cos(g_ViewPhi)*sin(g_ViewTheta)*speed*delta_t;
@@ -516,24 +519,24 @@ int main(int argc, char* argv[])
             direcao.y = 0;
             direcao.z = cos(g_ViewPhi)*cos(g_ViewTheta);
             direcao /= norm(direcao);
-            //camera_position_c -= direcao;
 
             camera_position_c = glm::vec4(g_TorsoPositionX - g_CameraDistance/2*direcao.x, 0.8, g_TorsoPositionZ - g_CameraDistance/2*direcao.z, 1.0f);
-
             camera_view_vector = glm::vec4(cos(g_ViewPhi)*sin(g_ViewTheta), sin(g_ViewPhi),cos(g_ViewPhi)*cos(g_ViewTheta),0.0f);
+
+            // Salva estado inicial da câmera para facilitar mensagem final de vitória do jogo
+            if(first)
+            {
+                first_position = glm::vec4(g_TorsoPositionX - g_CameraDistance/2*direcao.x, 0.8, g_TorsoPositionZ - g_CameraDistance/2*direcao.z, 1.0f);;
+                first_view = glm::vec4(cos(g_ViewPhi)*sin(g_ViewTheta), sin(g_ViewPhi),cos(g_ViewPhi)*cos(g_ViewTheta),0.0f);
+                first = false;
+            }
+
+
 
             // Computamos a matriz "View" utilizando os parâmetros da câmera para
             // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
             view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         }
-
-
-
-
-
-
-
-
 
 
 
@@ -577,384 +580,403 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
 
-
-
-        if (blue_alive)
+        // Menu Inicial
+        if(!tecla_ENTER_pressionada)
         {
-            // Boneco AZUL com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 blue_control_point1 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
-            glm::vec4 blue_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
-            glm::vec4 blue_control_point3 = glm::vec4(3.0f, -0.5f, 3.0f, 1.0f);
-            glm::vec4 blue_control_point4 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
-            blue_posicao = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), blue_control_point1, blue_control_point2, blue_control_point3, blue_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
+            model = Matrix_Identity() * Matrix_Translate(0, 0.775, -1) * Matrix_Scale(0.65f, 0.5f, 0.65f) * Matrix_Rotate_Y(3.141592) * Matrix_Rotate_X(3.141592/2);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_BLUE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_BLUE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-        if(green_alive)
-        {
-            // Boneco VERDE com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 green_control_point1 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
-            glm::vec4 green_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
-            glm::vec4 green_control_point3 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
-            glm::vec4 green_control_point4 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
-            green_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), green_control_point1, green_control_point2, green_control_point3, green_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_GREEN);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_GREEN);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-        if(orange_alive)
-        {
-            // Boneco ORANGE com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 orange_control_point1 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
-            glm::vec4 orange_control_point2 = glm::vec4(-8.0f, -0.5f, -7.0f, 1.0f);
-            glm::vec4 orange_control_point3 = glm::vec4(-2.0f, -0.5f, -5.0f, 1.0f);
-            glm::vec4 orange_control_point4 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
-            orange_posicao = bezier_curve((float)glfwGetTime()/3 - floor((float)glfwGetTime()/3), orange_control_point1, orange_control_point2, orange_control_point3, orange_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_ORANGE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_ORANGE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-        if(pink_alive)
-        {
-            // Boneco PINK com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 pink_control_point1 = glm::vec4(5.0f,  -0.5f, -4.0f, 1.0f);
-            glm::vec4 pink_control_point2 = glm::vec4(-4.0f, -0.5f, -1.0f, 1.0f);
-            glm::vec4 pink_control_point3 = glm::vec4(10.0f, -0.5f, -12.0f, 1.0f);
-            glm::vec4 pink_control_point4 = glm::vec4(5.0f, -0.5f, -4.0f, 1.0f);
-            pink_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), pink_control_point1, pink_control_point2, pink_control_point3, pink_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_PINK);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_PINK);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-        if(white_alive)
-        {
-            // Boneco WHITE com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 white_control_point1 = glm::vec4(-5.0f,  -0.5f, -3.0f, 1.0f);
-            glm::vec4 white_control_point2 = glm::vec4(0.0f, -0.5f, 5.0f, 1.0f);
-            glm::vec4 white_control_point3 = glm::vec4(5.0f, -0.5f, -7.0f, 1.0f);
-            glm::vec4 white_control_point4 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
-            white_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), white_control_point1, white_control_point2, white_control_point3, white_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_WHITE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_WHITE);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-        if(yellow_alive)
-        {
-            // Boneco YELLOW com movimento sobre uma Curva de Bézier de grau 3
-            glm::vec4 yellow_control_point1 = glm::vec4(2.0f,  -0.5f, 0.0f, 1.0f);
-            glm::vec4 yellow_control_point2 = glm::vec4(3.0f, -0.5f, 5.0f, 1.0f);
-            glm::vec4 yellow_control_point3 = glm::vec4(5.0f, -0.5f, 10.0f, 1.0f);
-            glm::vec4 yellow_control_point4 = glm::vec4(2.0f, -0.5f, 0.0f, 1.0f);
-            yellow_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), yellow_control_point1, yellow_control_point2, yellow_control_point3, yellow_control_point4);
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_YELLOW);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-        else
-        {
-            model = Matrix_Identity(); // Transformação inicial = identidade.
-            model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, AMONG_YELLOW);
-            DrawVirtualObject("Body");
-            DrawVirtualObject("BackPack");
-            DrawVirtualObject("Glass");
-            DrawVirtualObject("Glass2");
-            DrawVirtualObject("Right");
-            DrawVirtualObject("Left");
-            DrawVirtualObject("Box");
-        }
-
-
-
-
-
-
-
-        model = Matrix_Identity(); // Transformação inicial = identidade.
-        PushMatrix(model);
-
-            model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
-            PushMatrix(model);
-
-                model = model * Matrix_Rotate_Y(g_ViewTheta) * Matrix_Scale(0.5f, 0.5f, 0.5f);
-                model2 = model;
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, AMONG);
-                DrawVirtualObject("Body");
-                DrawVirtualObject("BackPack");
-                DrawVirtualObject("Glass");
-                DrawVirtualObject("Glass2");
-                DrawVirtualObject("Right");
-                DrawVirtualObject("Left");
-                DrawVirtualObject("Box");
-
-            PopMatrix(model);
-
-            PushMatrix(model);
-                // Desenhamos o modelo da Terra
-                model = model * Matrix_Translate(-4.5f, 2.75f, -4.5f)
-                      * Matrix_Scale(1.75f, 1.75f, 1.75f)
-                      * Matrix_Rotate_Z(0.6f)
-                      * Matrix_Rotate_X(0.2f)
-                      * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.5f);
-
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, SPHERE);
-                DrawVirtualObject("the_sphere");
-            PopMatrix(model);
-
-
-            PushMatrix(model);
-                // Desenhamos o modelo da skybox
-                glDisable(GL_CULL_FACE);
-                model = model * Matrix_Scale(8.0f, 8.0f, 8.0f) * Matrix_Rotate_Y((float)glfwGetTime() * 0.1f) * Matrix_Rotate_X((float)glfwGetTime() * 0.05f);
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, SKYBOX);
-                DrawVirtualObject("the_sphere");
-                glEnable(GL_CULL_FACE);
-            PopMatrix(model);
-
-            PushMatrix(model);
-                // Desenhamos o modelo do Sol
-                model = model * Matrix_Translate(5.0f, 5.0f, 5.0f)
-                      * Matrix_Scale(3.0f, 3.0f, 3.0f);
-
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, SUN);
-                DrawVirtualObject("the_sphere");
-            PopMatrix(model);
-
-            PushMatrix(model);
-                // Desenhamos o modelo do Axe
-                //model = model * Matrix_Translate(1.0f, 0.0f, 1.0f)
-                //      * Matrix_Scale(0.1f, 0.1f, 0.1f) * Matrix_Rotate_Y(g_ViewTheta) * Matrix_Rotate_X(3.141592/2) * Matrix_Rotate_Z(3.141592/2);
-                model = model2 * Matrix_Translate(-1.0f, 0.9f, 1.0f) * Matrix_Scale(0.1f, 0.075f, 0.1f) * Matrix_Rotate_X(3.141592/2) * Matrix_Rotate_Z(3.141592/2);
-
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, AXE);
-                DrawVirtualObject("Axe_Cylinder.003");
-            PopMatrix(model);
-
-        PopMatrix(model);
-
-        for(float i = -50;i <50; i++)
-            for(float j = -50;j <50; j++)
-        {
-            model = Matrix_Identity()* Matrix_Translate(4*i, -0.5f, 4*j) * Matrix_Scale(2.0f, 1.0f, 2.0f);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, PLANE);
+            glUniform1i(g_object_id_uniform, START);
             DrawVirtualObject("the_plane");
         }
 
-
-        if(tecla_E_pressionada)
+        // Jogo começado
+        else
         {
-            glm::vec4 distancia_blue = player_position - blue_posicao;
-            glm::vec4 distancia_green = player_position - green_posicao;
-            glm::vec4 distancia_orange = player_position - orange_posicao;
-            glm::vec4 distancia_pink = player_position - pink_posicao;
-            glm::vec4 distancia_white = player_position - white_posicao;
-            glm::vec4 distancia_yellow = player_position - yellow_posicao;
+            if(murders_left != 0)
+            {
+                if (blue_alive)
+                {
+                    // Boneco AZUL com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 blue_control_point1 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+                    glm::vec4 blue_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
+                    glm::vec4 blue_control_point3 = glm::vec4(3.0f, -0.5f, 3.0f, 1.0f);
+                    glm::vec4 blue_control_point4 = glm::vec4(1.0f, -0.5f, 1.0f, 1.0f);
+                    blue_posicao = bezier_curve((float)glfwGetTime()/2 - floor((float)glfwGetTime()/2), blue_control_point1, blue_control_point2, blue_control_point3, blue_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
 
-            float distancia_norma_blue = sqrt(distancia_blue.x*distancia_blue.x + distancia_blue.y*distancia_blue.y + distancia_blue.z*distancia_blue.z);
-            float distancia_norma_green = sqrt(distancia_green.x*distancia_green.x + distancia_green.y*distancia_green.y + distancia_green.z*distancia_green.z);
-            float distancia_norma_orange = sqrt(distancia_orange.x*distancia_orange.x + distancia_orange.y*distancia_orange.y + distancia_orange.z*distancia_orange.z);
-            float distancia_norma_pink = sqrt(distancia_pink.x*distancia_pink.x + distancia_pink.y*distancia_pink.y + distancia_pink.z*distancia_pink.z);
-            float distancia_norma_white = sqrt(distancia_white.x*distancia_white.x + distancia_white.y*distancia_white.y + distancia_white.z*distancia_white.z);
-            float distancia_norma_yellow = sqrt(distancia_yellow.x*distancia_yellow.x + distancia_yellow.y*distancia_yellow.y + distancia_yellow.z*distancia_yellow.z);
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
 
-            if (distancia_norma_blue < 1)
-            {
-                blue_alive = 0;
-            }
-            else if (distancia_norma_green < 1)
-            {
-                green_alive = 0;
-            }
-            else if (distancia_norma_orange < 1)
-            {
-                orange_alive = 0;
-            }
-            else if (distancia_norma_pink < 1)
-            {
-                pink_alive = 0;
-            }
-            else if (distancia_norma_white < 1)
-            {
-                white_alive = 0;
-            }
-            else if (distancia_norma_yellow < 1)
-            {
-                yellow_alive = 0;
-            }
+                    glUniform1i(g_object_id_uniform, AMONG_BLUE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(blue_posicao.x, blue_posicao.y, blue_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
 
-            murders_left = blue_alive + green_alive + orange_alive + pink_alive + white_alive + yellow_alive;
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_BLUE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+                if(green_alive)
+                {
+                    // Boneco VERDE com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 green_control_point1 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
+                    glm::vec4 green_control_point2 = glm::vec4(0.0f, -0.5f, 3.0f, 1.0f);
+                    glm::vec4 green_control_point3 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
+                    glm::vec4 green_control_point4 = glm::vec4(-5.5f, -0.5f, 4.0f, 1.0f);
+                    green_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), green_control_point1, green_control_point2, green_control_point3, green_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_GREEN);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(green_posicao.x, green_posicao.y, green_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_GREEN);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+                if(orange_alive)
+                {
+                    // Boneco ORANGE com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 orange_control_point1 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+                    glm::vec4 orange_control_point2 = glm::vec4(-8.0f, -0.5f, -7.0f, 1.0f);
+                    glm::vec4 orange_control_point3 = glm::vec4(-2.0f, -0.5f, -5.0f, 1.0f);
+                    glm::vec4 orange_control_point4 = glm::vec4(-3.0f, -0.5f, -3.0f, 1.0f);
+                    orange_posicao = bezier_curve((float)glfwGetTime()/3 - floor((float)glfwGetTime()/3), orange_control_point1, orange_control_point2, orange_control_point3, orange_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_ORANGE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(orange_posicao.x, orange_posicao.y, orange_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_ORANGE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+                if(pink_alive)
+                {
+                    // Boneco PINK com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 pink_control_point1 = glm::vec4(5.0f,  -0.5f, -4.0f, 1.0f);
+                    glm::vec4 pink_control_point2 = glm::vec4(-4.0f, -0.5f, -1.0f, 1.0f);
+                    glm::vec4 pink_control_point3 = glm::vec4(10.0f, -0.5f, -12.0f, 1.0f);
+                    glm::vec4 pink_control_point4 = glm::vec4(5.0f, -0.5f, -4.0f, 1.0f);
+                    pink_posicao = bezier_curve((float)glfwGetTime()/4 - floor((float)glfwGetTime()/4), pink_control_point1, pink_control_point2, pink_control_point3, pink_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_PINK);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(pink_posicao.x, pink_posicao.y, pink_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_PINK);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+                if(white_alive)
+                {
+                    // Boneco WHITE com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 white_control_point1 = glm::vec4(-5.0f,  -0.5f, -3.0f, 1.0f);
+                    glm::vec4 white_control_point2 = glm::vec4(0.0f, -0.5f, 5.0f, 1.0f);
+                    glm::vec4 white_control_point3 = glm::vec4(5.0f, -0.5f, -7.0f, 1.0f);
+                    glm::vec4 white_control_point4 = glm::vec4(-5.0f, -0.5f, -3.0f, 1.0f);
+                    white_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), white_control_point1, white_control_point2, white_control_point3, white_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_WHITE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(white_posicao.x, white_posicao.y, white_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_WHITE);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+                if(yellow_alive)
+                {
+                    // Boneco YELLOW com movimento sobre uma Curva de Bézier de grau 3
+                    glm::vec4 yellow_control_point1 = glm::vec4(2.0f,  -0.5f, 0.0f, 1.0f);
+                    glm::vec4 yellow_control_point2 = glm::vec4(3.0f, -0.5f, 5.0f, 1.0f);
+                    glm::vec4 yellow_control_point3 = glm::vec4(5.0f, -0.5f, 10.0f, 1.0f);
+                    glm::vec4 yellow_control_point4 = glm::vec4(2.0f, -0.5f, 0.0f, 1.0f);
+                    yellow_posicao = bezier_curve((float)glfwGetTime()/5 - floor((float)glfwGetTime()/5), yellow_control_point1, yellow_control_point2, yellow_control_point3, yellow_control_point4);
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_YELLOW);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+                else
+                {
+                    model = Matrix_Identity(); // Transformação inicial = identidade.
+                    model = model * Matrix_Translate(yellow_posicao.x, yellow_posicao.y, yellow_posicao.z + 1.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f) * Matrix_Rotate_X(-3.141592/2);
+
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+                    glUniform1i(g_object_id_uniform, AMONG_YELLOW);
+                    DrawVirtualObject("Body");
+                    DrawVirtualObject("BackPack");
+                    DrawVirtualObject("Glass");
+                    DrawVirtualObject("Glass2");
+                    DrawVirtualObject("Right");
+                    DrawVirtualObject("Left");
+                    DrawVirtualObject("Box");
+                }
+
+
+                model = Matrix_Identity(); // Transformação inicial = identidade.
+                PushMatrix(model);
+
+                    model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
+                    PushMatrix(model);
+
+                        model = model * Matrix_Rotate_Y(g_ViewTheta) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+                        model2 = model;
+                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                        glUniform1i(g_object_id_uniform, AMONG);
+                        DrawVirtualObject("Body");
+                        DrawVirtualObject("BackPack");
+                        DrawVirtualObject("Glass");
+                        DrawVirtualObject("Glass2");
+                        DrawVirtualObject("Right");
+                        DrawVirtualObject("Left");
+                        DrawVirtualObject("Box");
+
+                    PopMatrix(model);
+
+                    PushMatrix(model);
+                        // Desenhamos o modelo da Terra
+                        model = model * Matrix_Translate(-4.5f, 2.75f, -4.5f)
+                              * Matrix_Scale(1.75f, 1.75f, 1.75f)
+                              * Matrix_Rotate_Z(0.6f)
+                              * Matrix_Rotate_X(0.2f)
+                              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.5f);
+
+                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                        glUniform1i(g_object_id_uniform, SPHERE);
+                        DrawVirtualObject("the_sphere");
+                    PopMatrix(model);
+
+
+                    PushMatrix(model);
+                        // Desenhamos o modelo da skybox
+                        glDisable(GL_CULL_FACE);
+                        model = model * Matrix_Scale(8.0f, 8.0f, 8.0f) * Matrix_Rotate_Y((float)glfwGetTime() * 0.1f) * Matrix_Rotate_X((float)glfwGetTime() * 0.05f);
+                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                        glUniform1i(g_object_id_uniform, SKYBOX);
+                        DrawVirtualObject("the_sphere");
+                        glEnable(GL_CULL_FACE);
+                    PopMatrix(model);
+
+                    PushMatrix(model);
+                        // Desenhamos o modelo do Sol
+                        model = model * Matrix_Translate(5.0f, 5.0f, 5.0f)
+                              * Matrix_Scale(3.0f, 3.0f, 3.0f);
+
+                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                        glUniform1i(g_object_id_uniform, SUN);
+                        DrawVirtualObject("the_sphere");
+                    PopMatrix(model);
+
+                    PushMatrix(model);
+                        // Desenhamos o modelo do Axe
+                        model = model2 * Matrix_Translate(-1.0f, 0.9f, 1.0f) * Matrix_Scale(0.1f, 0.075f, 0.1f) * Matrix_Rotate_X(3.141592/2 + 100*delta_t*tecla_E_pressionada) * Matrix_Rotate_Z(3.141592/2);
+                        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                        glUniform1i(g_object_id_uniform, AXE);
+                        DrawVirtualObject("Axe_Cylinder.003");
+                    PopMatrix(model);
+
+                PopMatrix(model);
+
+                for(float i = -50;i <50; i++)
+                    for(float j = -50;j <50; j++)
+                {
+                    model = Matrix_Identity()* Matrix_Translate(4*i, -0.5f, 4*j) * Matrix_Scale(2.0f, 1.0f, 2.0f);
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                    glUniform1i(g_object_id_uniform, PLANE);
+                    DrawVirtualObject("the_plane");
+                }
+
+                // Checagem se inimigo foi atingido
+                if(tecla_E_pressionada)
+                {
+                    glm::vec4 distancia_blue = player_position - blue_posicao;
+                    glm::vec4 distancia_green = player_position - green_posicao;
+                    glm::vec4 distancia_orange = player_position - orange_posicao;
+                    glm::vec4 distancia_pink = player_position - pink_posicao;
+                    glm::vec4 distancia_white = player_position - white_posicao;
+                    glm::vec4 distancia_yellow = player_position - yellow_posicao;
+
+                    float distancia_norma_blue = sqrt(distancia_blue.x*distancia_blue.x + distancia_blue.y*distancia_blue.y + distancia_blue.z*distancia_blue.z);
+                    float distancia_norma_green = sqrt(distancia_green.x*distancia_green.x + distancia_green.y*distancia_green.y + distancia_green.z*distancia_green.z);
+                    float distancia_norma_orange = sqrt(distancia_orange.x*distancia_orange.x + distancia_orange.y*distancia_orange.y + distancia_orange.z*distancia_orange.z);
+                    float distancia_norma_pink = sqrt(distancia_pink.x*distancia_pink.x + distancia_pink.y*distancia_pink.y + distancia_pink.z*distancia_pink.z);
+                    float distancia_norma_white = sqrt(distancia_white.x*distancia_white.x + distancia_white.y*distancia_white.y + distancia_white.z*distancia_white.z);
+                    float distancia_norma_yellow = sqrt(distancia_yellow.x*distancia_yellow.x + distancia_yellow.y*distancia_yellow.y + distancia_yellow.z*distancia_yellow.z);
+
+                    if (distancia_norma_blue < 1)
+                    {
+                        blue_alive = 0;
+                    }
+                    else if (distancia_norma_green < 1)
+                    {
+                        green_alive = 0;
+                    }
+                    else if (distancia_norma_orange < 1)
+                    {
+                        orange_alive = 0;
+                    }
+                    else if (distancia_norma_pink < 1)
+                    {
+                        pink_alive = 0;
+                    }
+                    else if (distancia_norma_white < 1)
+                    {
+                        white_alive = 0;
+                    }
+                    else if (distancia_norma_yellow < 1)
+                    {
+                        yellow_alive = 0;
+                    }
+
+                    murders_left = blue_alive + green_alive + orange_alive + pink_alive + white_alive + yellow_alive;
+                }
+
+                // Imprimimos na tela informação sobre o número de quadros renderizados
+                // por segundo (frames per second), aim e Murders Left.
+                TextRendering_ShowFramesPerSecond(window);
+
+                TextRendering_Aim(window);
+
+                TextRendering_Murders_left(window);
+            }
+            else
+            {
+                g_ViewTheta = 0.0f;
+                g_ViewPhi = 0;
+                camera_position_c = first_position;
+                camera_view_vector = first_view;
+                view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+                glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+                glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+                model = Matrix_Identity() * Matrix_Translate(0, 0.775, 4.0) * Matrix_Scale(4.5f, 3.0f, 4.5f) * Matrix_Rotate_Y(3.141592) * Matrix_Rotate_X(3.141592/2);
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, VICTORY);
+                DrawVirtualObject("the_plane");
+                tecla_A_pressionada = false;
+                tecla_D_pressionada = false;
+                tecla_E_pressionada = false;
+                tecla_S_pressionada = false;
+                tecla_W_pressionada = false;
+                tecla_A_pressionada = false;
+
+            }
         }
-
-
-        // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-        // terceiro cubo.
-//        TextRendering_ShowEulerAngles(window);
-
-        // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-//        TextRendering_ShowProjection(window);
-
-        // Imprimimos na tela informação sobre o número de quadros renderizados
-        // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
-
-        TextRendering_Aim(window);
-
-        TextRendering_Murders_left(window);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1113,6 +1135,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage13"), 13);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage14"), 14);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage15"), 15);
     glUseProgram(0);
 }
 
@@ -1567,72 +1591,75 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed)
+    if(tecla_ENTER_pressionada && murders_left != 0)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-
-        // Atualizamos parâmetros da câmera com os deslocamentos
-        if(g_LookAtCamera)
+        if (g_LeftMouseButtonPressed)
         {
-            g_CameraTheta -= 0.01f*dx;
-            g_CameraPhi   += 0.01f*dy;
+            // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+            float dx = xpos - g_LastCursorPosX;
+            float dy = ypos - g_LastCursorPosY;
+
+
+            // Atualizamos parâmetros da câmera com os deslocamentos
+            if(g_LookAtCamera)
+            {
+                g_CameraTheta -= 0.01f*dx;
+                g_CameraPhi   += 0.01f*dy;
+            }
+            else
+            {
+                // Atualizamos os parâmetros da câmera
+                g_ViewTheta -= 0.01f*dx;
+                g_ViewPhi   -= 0.01f*dy;
+            }
+
+            // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+            float phimax = 3.141592f/2;
+            float phimin = -phimax + 3.141592f/3;
+
+            if (g_ViewPhi > phimax)
+                g_ViewPhi = phimax;
+
+            if (g_ViewPhi < phimin)
+                g_ViewPhi = phimin;
+
+            // Atualizamos as variáveis globais para armazenar a posição atual do
+            // cursor como sendo a última posição conhecida do cursor.
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = ypos;
         }
-        else
+
+        if (g_RightMouseButtonPressed)
         {
-            // Atualizamos os parâmetros da câmera
-            g_ViewTheta -= 0.01f*dx;
-            g_ViewPhi   -= 0.01f*dy;
+            // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+            float dx = xpos - g_LastCursorPosX;
+            float dy = ypos - g_LastCursorPosY;
+
+            // Atualizamos parâmetros da antebraço com os deslocamentos
+            g_ForearmAngleZ -= 0.01f*dx;
+            g_ForearmAngleX += 0.01f*dy;
+
+            // Atualizamos as variáveis globais para armazenar a posição atual do
+            // cursor como sendo a última posição conhecida do cursor.
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = ypos;
         }
 
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax + 3.141592f/3;
+        if (g_MiddleMouseButtonPressed)
+        {
+            // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+            float dx = xpos - g_LastCursorPosX;
+            float dy = ypos - g_LastCursorPosY;
 
-        if (g_ViewPhi > phimax)
-            g_ViewPhi = phimax;
+            // Atualizamos parâmetros da antebraço com os deslocamentos
+            g_TorsoPositionX += 0.01f*dx;
+            g_TorsoPositionY -= 0.01f*dy;
 
-        if (g_ViewPhi < phimin)
-            g_ViewPhi = phimin;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    if (g_RightMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    if (g_MiddleMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
+            // Atualizamos as variáveis globais para armazenar a posição atual do
+            // cursor como sendo a última posição conhecida do cursor.
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = ypos;
+        }
     }
 }
 
@@ -1661,130 +1688,139 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    // Se o usuário pressionar a tecla W, movimentamos o personagem
-    if (key == GLFW_KEY_W)
+    // Se o usuário apertar a tecla ENTER, começamos o jogo
+    if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
     {
-        if (action == GLFW_PRESS)
-            // Usuário apertou a tecla W, então atualizamos o estado para pressionada
-            tecla_W_pressionada = true;
-
-        else if (action == GLFW_RELEASE)
-            // Usuário largou a tecla W, então atualizamos o estado para NÃO pressionada
-            tecla_W_pressionada = false;
-
-        else if (action == GLFW_REPEAT)
-            // Usuário está segurando a tecla W e o sistema operacional está
-            // disparando eventos de repetição. Neste caso, não precisamos
-            // atualizar o estado da tecla, pois antes de um evento REPEAT
-            // necessariamente deve ter ocorrido um evento PRESS.
-            ;
+        tecla_ENTER_pressionada = true;
     }
 
-    // Se o usuário pressionar a tecla A, movimentamos o personagem
-    if (key == GLFW_KEY_A)
+    if(tecla_ENTER_pressionada && murders_left != 0)
     {
-        if (action == GLFW_PRESS)
-            // Usuário apertou a tecla A, então atualizamos o estado para pressionada
-            tecla_A_pressionada = true;
+        // Se o usuário pressionar a tecla W, movimentamos o personagem
+        if (key == GLFW_KEY_W)
+        {
+            if (action == GLFW_PRESS)
+                // Usuário apertou a tecla W, então atualizamos o estado para pressionada
+                tecla_W_pressionada = true;
 
-        else if (action == GLFW_RELEASE)
-            // Usuário largou a tecla A, então atualizamos o estado para NÃO pressionada
-            tecla_A_pressionada = false;
+            else if (action == GLFW_RELEASE)
+                // Usuário largou a tecla W, então atualizamos o estado para NÃO pressionada
+                tecla_W_pressionada = false;
 
-        else if (action == GLFW_REPEAT)
-            // Usuário está segurando a tecla A e o sistema operacional está
-            // disparando eventos de repetição. Neste caso, não precisamos
-            // atualizar o estado da tecla, pois antes de um evento REPEAT
-            // necessariamente deve ter ocorrido um evento PRESS.
-            ;
-    }
+            else if (action == GLFW_REPEAT)
+                // Usuário está segurando a tecla W e o sistema operacional está
+                // disparando eventos de repetição. Neste caso, não precisamos
+                // atualizar o estado da tecla, pois antes de um evento REPEAT
+                // necessariamente deve ter ocorrido um evento PRESS.
+                ;
+        }
 
-    // Se o usuário pressionar a tecla S, movimentamos o personagem
-    if (key == GLFW_KEY_S)
-    {
-        if (action == GLFW_PRESS)
-            // Usuário apertou a tecla S, então atualizamos o estado para pressionada
-            tecla_S_pressionada = true;
+        // Se o usuário pressionar a tecla A, movimentamos o personagem
+        if (key == GLFW_KEY_A)
+        {
+            if (action == GLFW_PRESS)
+                // Usuário apertou a tecla A, então atualizamos o estado para pressionada
+                tecla_A_pressionada = true;
 
-        else if (action == GLFW_RELEASE)
-            // Usuário largou a tecla S, então atualizamos o estado para NÃO pressionada
-            tecla_S_pressionada = false;
+            else if (action == GLFW_RELEASE)
+                // Usuário largou a tecla A, então atualizamos o estado para NÃO pressionada
+                tecla_A_pressionada = false;
 
-        else if (action == GLFW_REPEAT)
-            // Usuário está segurando a tecla S e o sistema operacional está
-            // disparando eventos de repetição. Neste caso, não precisamos
-            // atualizar o estado da tecla, pois antes de um evento REPEAT
-            // necessariamente deve ter ocorrido um evento PRESS.
-            ;
-    }
+            else if (action == GLFW_REPEAT)
+                // Usuário está segurando a tecla A e o sistema operacional está
+                // disparando eventos de repetição. Neste caso, não precisamos
+                // atualizar o estado da tecla, pois antes de um evento REPEAT
+                // necessariamente deve ter ocorrido um evento PRESS.
+                ;
+        }
 
-    // Se o usuário pressionar a tecla D, movimentamos o personagem
-    if (key == GLFW_KEY_D)
-    {
-        if (action == GLFW_PRESS)
-            // Usuário apertou a tecla D, então atualizamos o estado para pressionada
-            tecla_D_pressionada = true;
+        // Se o usuário pressionar a tecla S, movimentamos o personagem
+        if (key == GLFW_KEY_S)
+        {
+            if (action == GLFW_PRESS)
+                // Usuário apertou a tecla S, então atualizamos o estado para pressionada
+                tecla_S_pressionada = true;
 
-        else if (action == GLFW_RELEASE)
-            // Usuário largou a tecla D, então atualizamos o estado para NÃO pressionada
-            tecla_D_pressionada = false;
+            else if (action == GLFW_RELEASE)
+                // Usuário largou a tecla S, então atualizamos o estado para NÃO pressionada
+                tecla_S_pressionada = false;
 
-        else if (action == GLFW_REPEAT)
-            // Usuário está segurando a tecla D e o sistema operacional está
-            // disparando eventos de repetição. Neste caso, não precisamos
-            // atualizar o estado da tecla, pois antes de um evento REPEAT
-            // necessariamente deve ter ocorrido um evento PRESS.
-            ;
-    }
+            else if (action == GLFW_REPEAT)
+                // Usuário está segurando a tecla S e o sistema operacional está
+                // disparando eventos de repetição. Neste caso, não precisamos
+                // atualizar o estado da tecla, pois antes de um evento REPEAT
+                // necessariamente deve ter ocorrido um evento PRESS.
+                ;
+        }
 
-    if (key == GLFW_KEY_E)
-    {
-        if (action == GLFW_PRESS)
-            // Usuário apertou a tecla E, então atualizamos o estado para pressionada
-            tecla_E_pressionada = true;
+        // Se o usuário pressionar a tecla D, movimentamos o personagem
+        if (key == GLFW_KEY_D)
+        {
+            if (action == GLFW_PRESS)
+                // Usuário apertou a tecla D, então atualizamos o estado para pressionada
+                tecla_D_pressionada = true;
 
-        else if (action == GLFW_RELEASE)
-            // Usuário largou a tecla E, então atualizamos o estado para NÃO pressionada
-            tecla_E_pressionada = false;
+            else if (action == GLFW_RELEASE)
+                // Usuário largou a tecla D, então atualizamos o estado para NÃO pressionada
+                tecla_D_pressionada = false;
 
-        else if (action == GLFW_REPEAT)
-            // Usuário está segurando a tecla D e o sistema operacional está
-            // disparando eventos de repetição. Neste caso, não precisamos
-            // atualizar o estado da tecla, pois antes de um evento REPEAT
-            // necessariamente deve ter ocorrido um evento PRESS.
-            ;
-    }
+            else if (action == GLFW_REPEAT)
+                // Usuário está segurando a tecla D e o sistema operacional está
+                // disparando eventos de repetição. Neste caso, não precisamos
+                // atualizar o estado da tecla, pois antes de um evento REPEAT
+                // necessariamente deve ter ocorrido um evento PRESS.
+                ;
+        }
 
-    // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
-    if (key == GLFW_KEY_P && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = true;
-    }
+        if (key == GLFW_KEY_E)
+        {
+            if (action == GLFW_PRESS)
+                // Usuário apertou a tecla E, então atualizamos o estado para pressionada
+                tecla_E_pressionada = true;
 
-    // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
-    if (key == GLFW_KEY_O && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = false;
-    }
+            else if (action == GLFW_RELEASE)
+                // Usuário largou a tecla E, então atualizamos o estado para NÃO pressionada
+                tecla_E_pressionada = false;
 
-    // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
-    if (key == GLFW_KEY_H && action == GLFW_PRESS)
-    {
-        g_ShowInfoText = !g_ShowInfoText;
-    }
+            else if (action == GLFW_REPEAT)
+                // Usuário está segurando a tecla D e o sistema operacional está
+                // disparando eventos de repetição. Neste caso, não precisamos
+                // atualizar o estado da tecla, pois antes de um evento REPEAT
+                // necessariamente deve ter ocorrido um evento PRESS.
+                ;
+        }
 
-    // Se o usuário apertar a tecla R, recarregamos os shaders dos arquivos "shader_fragment.glsl" e "shader_vertex.glsl".
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-    {
-        LoadShadersFromFiles();
-        fprintf(stdout,"Shaders recarregados!\n");
-        fflush(stdout);
-    }
+        // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
+        if (key == GLFW_KEY_P && action == GLFW_PRESS)
+        {
+            g_UsePerspectiveProjection = true;
+        }
 
-    // Se o usuário apertar a tecla L, mudamos o tipo de câmera
-    if (key == GLFW_KEY_L && action == GLFW_PRESS)
-    {
-        g_LookAtCamera = !g_LookAtCamera;
+        // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
+        if (key == GLFW_KEY_O && action == GLFW_PRESS)
+        {
+            g_UsePerspectiveProjection = false;
+        }
+
+        // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
+        if (key == GLFW_KEY_H && action == GLFW_PRESS)
+        {
+            g_ShowInfoText = !g_ShowInfoText;
+        }
+
+        // Se o usuário apertar a tecla R, recarregamos os shaders dos arquivos "shader_fragment.glsl" e "shader_vertex.glsl".
+        if (key == GLFW_KEY_R && action == GLFW_PRESS)
+        {
+            LoadShadersFromFiles();
+            fprintf(stdout,"Shaders recarregados!\n");
+            fflush(stdout);
+        }
+
+        // Se o usuário apertar a tecla L, mudamos o tipo de câmera
+        if (key == GLFW_KEY_L && action == GLFW_PRESS)
+        {
+            g_LookAtCamera = !g_LookAtCamera;
+        }
     }
 }
 
@@ -1856,21 +1892,6 @@ void TextRendering_ShowModelViewProjection(
     TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f-26*pad, 1.0f);
 }
 
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
-//void TextRendering_ShowEulerAngles(GLFWwindow* window)
-//{
-//    if ( !g_ShowInfoText )
-//        return;
-//
-//    float pad = TextRendering_LineHeight(window);
-//
-//    char buffer[80];
-//    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-//
-//    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
-//}
-
 void TextRendering_Aim(GLFWwindow* window)
 {
     if ( !g_ShowInfoText )
@@ -1895,21 +1916,6 @@ void TextRendering_Murders_left(GLFWwindow* window)
     snprintf(buffer, 80, "Murders Left: %d", murders_left);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.5f);
-}
-
-// Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow* window)
-{
-    if ( !g_ShowInfoText )
-        return;
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    if ( g_UsePerspectiveProjection )
-        TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
-    else
-        TextRendering_PrintString(window, "Orthographic", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
 }
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
@@ -2125,11 +2131,8 @@ glm::vec4 bezier_curve(float t, glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, glm::v
     interpolacao.y = pow((1 - t), 3)*p1.y + 3*t*pow((1 - t), 2)*p2.y + 3*pow(t, 2)*(1 - t)*p3.y + pow(t, 3)*p4.y;
     interpolacao.z = pow((1 - t), 3)*p1.z + 3*t*pow((1 - t), 2)*p2.z + 3*pow(t, 2)*(1 - t)*p3.z + pow(t, 3)*p4.z;
 
-    //printf("X = %f\nY = %f\nZ = %f\nW = %f\n", interpolacao.x, interpolacao.y, interpolacao.z, interpolacao.w);
-
     return interpolacao;
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-

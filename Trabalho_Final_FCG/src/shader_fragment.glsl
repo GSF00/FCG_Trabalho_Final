@@ -20,13 +20,7 @@ uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
 #define SPHERE 0
-#define BUNNY  1
 #define PLANE  2
-#define AK     3
-#define FACE   4
-#define CUBE   5
-#define SNIPER 6
-#define SWORD  7
 #define GUN    8
 #define AMONG  9
 #define SKYBOX 10
@@ -38,6 +32,8 @@ uniform mat4 projection;
 #define AMONG_WHITE 16
 #define AMONG_YELLOW 17
 #define AXE     18
+#define START   19
+#define VICTORY 20
 
 uniform int object_id;
 
@@ -60,6 +56,8 @@ uniform sampler2D TextureImage10;
 uniform sampler2D TextureImage11;
 uniform sampler2D TextureImage12;
 uniform sampler2D TextureImage13;
+uniform sampler2D TextureImage14;
+uniform sampler2D TextureImage15;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -229,6 +227,18 @@ void main()
         Ks = vec3(0.3f, 0.3f, 0.3f);
         phong_specular_term = Ks*I*pow(max(0, dot(r, v)),q);
         color.rgb = Kd0 * (lambert + 0.03) + phong_specular_term;
+    }
+    else if(object_id == START)
+    {
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage14
+        Kd0 = texture(TextureImage14, vec2(U,V)).rgb;
+        color.rgb = Kd0;
+    }
+    else if(object_id == VICTORY)
+    {
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage15
+        Kd0 = texture(TextureImage15, vec2(U,V)).rgb;
+        color.rgb = Kd0;
     }
 
     // Alpha default = 1 = 100% opaco = 0% transparente
