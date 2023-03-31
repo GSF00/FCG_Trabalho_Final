@@ -7,8 +7,10 @@
 //
 //                   TRABALHO FINAL
 //
-//        Nome:    Guilherme Schaab Fisch
-//        Cartão:       00288913
+//                       Nomes:
+//
+//              Guilherme Schaab Fisch
+//          Luis Filipe Antunes Rodrigues
 
 
 
