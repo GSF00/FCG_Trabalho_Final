@@ -546,7 +546,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+        float farplane  = -40.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -851,7 +851,7 @@ int main(int argc, char* argv[])
 
                     PushMatrix(model);
                         // Desenhamos o modelo da Terra
-                        model = model * Matrix_Translate(-4.5f, 2.75f, -4.5f)
+                        model = model * Matrix_Translate(-10.0f, 7.0f, -10.0f)
                               * Matrix_Scale(1.75f, 1.75f, 1.75f)
                               * Matrix_Rotate_Z(0.6f)
                               * Matrix_Rotate_X(0.2f)
@@ -866,7 +866,7 @@ int main(int argc, char* argv[])
                     PushMatrix(model);
                         // Desenhamos o modelo da skybox
                         glDisable(GL_CULL_FACE);
-                        model = model * Matrix_Scale(8.0f, 8.0f, 8.0f) * Matrix_Rotate_Y((float)glfwGetTime() * 0.1f) * Matrix_Rotate_X((float)glfwGetTime() * 0.05f);
+                        model = model * Matrix_Scale(30.0f, 30.0f, 30.0f) * Matrix_Rotate_Y((float)glfwGetTime() * 0.1f) * Matrix_Rotate_X((float)glfwGetTime() * 0.05f);
                         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                         glUniform1i(g_object_id_uniform, SKYBOX);
                         DrawVirtualObject("the_sphere");
@@ -875,7 +875,7 @@ int main(int argc, char* argv[])
 
                     PushMatrix(model);
                         // Desenhamos o modelo do Sol
-                        model = model * Matrix_Translate(5.0f, 5.0f, 5.0f)
+                        model = model * Matrix_Translate(10.0f, 10.0f, 10.0f)
                               * Matrix_Scale(3.0f, 3.0f, 3.0f);
 
                         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
